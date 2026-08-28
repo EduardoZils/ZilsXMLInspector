@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture do painel de detalhes: enumeracoes documentadas uma a uma, pattern,
+     tamanhos, faixa numerica, default, fixed e atributos. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="TUF">
+    <xs:annotation>
+      <xs:documentation>Sigla da unidade federativa.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="RO">
+        <xs:annotation><xs:documentation>Rondonia</xs:documentation></xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="AC">
+        <xs:annotation><xs:documentation>Acre</xs:documentation></xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="SP">
+        <xs:annotation><xs:documentation>Sao Paulo</xs:documentation></xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TModelo">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="55"/>
+      <xs:enumeration value="65"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TChave">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{44}"/>
+      <xs:length value="44"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TValor">
+    <xs:restriction base="xs:decimal">
+      <xs:totalDigits value="15"/>
+      <xs:fractionDigits value="2"/>
+      <xs:minInclusive value="0"/>
+      <xs:maxExclusive value="1000000"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="nota">
+    <xs:annotation>
+      <xs:documentation>Nota fiscal de exemplo.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="uf" type="TUF"/>
+        <xs:element name="modelo" type="TModelo"/>
+        <xs:element name="chave" type="TChave"/>
+        <xs:element name="valor" type="TValor"/>
+        <xs:choice>
+          <xs:element name="cpf" type="xs:string"/>
+          <xs:element name="cnpj" type="xs:string"/>
+        </xs:choice>
+        <xs:element name="obs" type="xs:string" default="sem observacao" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="versao" type="xs:string" use="required" fixed="1.00"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

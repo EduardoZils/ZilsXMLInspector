@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- include, extension, restriction, substitutionGroup, xs:any e mixed,
+     tudo em um targetNamespace com elementos qualificados. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://exemplo.com.br/verificador"
+           xmlns="http://exemplo.com.br/verificador"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="comum.xsd"/>
+
+  <xs:complexType name="TDerivado">
+    <xs:complexContent>
+      <xs:extension base="TBase">
+        <xs:sequence>
+          <xs:element name="sigla" type="TSigla"/>
+          <xs:element name="peso" type="xs:decimal" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="tipo" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="TObservacao" mixed="true">
+    <xs:sequence>
+      <xs:element name="enfase" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TLivre">
+    <xs:sequence>
+      <xs:any namespace="##other" processContents="lax" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="pagamento" abstract="true" type="xs:anyType"/>
+  <xs:element name="pagamentoDinheiro" type="TDerivado" substitutionGroup="pagamento"/>
+  <xs:element name="pagamentoCartao" type="TDerivado" substitutionGroup="pagamento"/>
+
+  <xs:element name="pedido">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="cabecalho" type="TDerivado"/>
+        <xs:element ref="pagamento" maxOccurs="unbounded"/>
+        <xs:element name="observacao" type="TObservacao" minOccurs="0"/>
+        <xs:element name="extras" type="TLivre" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="pedidoSimplificado" type="TBase"/>
+
+</xs:schema>

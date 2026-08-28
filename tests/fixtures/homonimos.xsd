@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Declaracoes diferentes com o mesmo nome, aninhadas. Nao ha recursao aqui:
+     sao tipos distintos que por acaso reusam o nome. E o padrao do "toma"
+     dentro de "toma" no CTe e do "nfse" dentro de "nfse" nos leiautes de NFSe.
+     Um guarda de recursao que compare nomes derrubaria o filho obrigatorio e
+     produziria um XML invalido. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:complexType name="TTomador">
+    <xs:sequence>
+      <xs:element name="toma" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TNota">
+    <xs:sequence>
+      <xs:element name="nfse" type="xs:string"/>
+      <xs:element name="toma" type="TTomador"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="nfse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="nfse" type="TNota"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- xs:choice, xs:all, xs:group, xs:attributeGroup e cardinalidades variadas. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:attributeGroup name="AGIdentificacao">
+    <xs:attribute name="codigo" type="xs:string" use="required"/>
+    <xs:attribute name="apelido" type="xs:string" use="optional"/>
+  </xs:attributeGroup>
+
+  <xs:group name="GEndereco">
+    <xs:sequence>
+      <xs:element name="logradouro" type="xs:string"/>
+      <xs:element name="numero" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:group>
+
+  <xs:complexType name="TPessoa">
+    <xs:sequence>
+      <xs:choice>
+        <xs:element name="cpf" type="xs:string"/>
+        <xs:element name="cnpj" type="xs:string"/>
+        <xs:element name="idEstrangeiro" type="xs:string"/>
+      </xs:choice>
+      <xs:group ref="GEndereco"/>
+      <xs:element name="telefone" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:choice minOccurs="0">
+        <xs:sequence>
+          <xs:element name="email" type="xs:string"/>
+          <xs:element name="confirmado" type="xs:boolean"/>
+        </xs:sequence>
+        <xs:element name="semContato" type="xs:string"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="AGIdentificacao"/>
+  </xs:complexType>
+
+  <xs:complexType name="TPreferencias">
+    <xs:all>
+      <xs:element name="idioma" type="xs:language"/>
+      <xs:element name="tema" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:element name="cadastro">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="pessoa" type="TPessoa" maxOccurs="unbounded"/>
+        <xs:element name="preferencias" type="TPreferencias" minOccurs="0"/>
+        <xs:element name="obrigatorioRepetido" type="xs:string" minOccurs="2" maxOccurs="5"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

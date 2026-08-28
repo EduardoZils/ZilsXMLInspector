@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema com defeito de publicacao: o mesmo tipo global declarado duas
+     vezes. Nem o xmlschema nem o libxml2 aceitam isso no modo normal, mas o
+     modo tolerante consegue abrir e gerar o exemplo. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="TDuplicado">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="10"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TDuplicado">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="raiz">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="campo" type="TDuplicado"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

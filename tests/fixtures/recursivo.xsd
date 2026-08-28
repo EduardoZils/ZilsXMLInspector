@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tipo recursivo: o gerador precisa interromper a recursao sem travar. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:complexType name="TNo">
+    <xs:sequence>
+      <xs:element name="rotulo" type="xs:string"/>
+      <xs:element name="filho" type="TNo" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TCiclicoA">
+    <xs:sequence>
+      <xs:element name="b" type="TCiclicoB" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TCiclicoB">
+    <xs:sequence>
+      <xs:element name="a" type="TCiclicoA" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="arvore">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="raiz" type="TNo"/>
+        <xs:element name="ciclo" type="TCiclicoA"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

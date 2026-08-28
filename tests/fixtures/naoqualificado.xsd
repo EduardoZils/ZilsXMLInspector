@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- targetNamespace com elementFormDefault="unqualified": so o elemento global
+     fica no namespace, os locais nao. O gerador precisa usar prefixo em vez de
+     namespace padrao para nao jogar os filhos dentro do namespace por engano. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://exemplo.com.br/local"
+           xmlns:loc="http://exemplo.com.br/local"
+           elementFormDefault="unqualified"
+           attributeFormDefault="unqualified">
+
+  <xs:element name="relatorio">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="titulo" type="xs:string"/>
+        <xs:element name="linha" type="xs:string" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="referencia" type="xs:gYearMonth" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

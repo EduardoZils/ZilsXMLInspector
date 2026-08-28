@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Incluido por principal.xsd: mesmo targetNamespace, sem elemento raiz. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://exemplo.com.br/verificador"
+           xmlns="http://exemplo.com.br/verificador"
+           elementFormDefault="qualified">
+
+  <xs:simpleType name="TSigla">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Z]{2,3}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="TBase">
+    <xs:sequence>
+      <xs:element name="identificador" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

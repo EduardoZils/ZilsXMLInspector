@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- elementFormDefault="qualified" aqui, mas o tipo importado traz elementos
+     locais nao qualificados. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:imp="http://exemplo.com.br/importado"
+           targetNamespace="http://exemplo.com.br/resposta"
+           elementFormDefault="qualified">
+
+  <xs:import namespace="http://exemplo.com.br/importado" schemaLocation="importado.xsd"/>
+
+  <xs:element name="resposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="identificador" type="xs:string"/>
+        <xs:element name="confirmacao" type="imp:TConfirmacao"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

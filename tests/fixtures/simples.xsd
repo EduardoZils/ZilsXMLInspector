@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tipos simples com uma boa variedade de facets, sem namespace alvo. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="TChave">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{44}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TValor">
+    <xs:restriction base="xs:decimal">
+      <xs:totalDigits value="15"/>
+      <xs:fractionDigits value="2"/>
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TModelo">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="55"/>
+      <xs:enumeration value="65"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TDescricao">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="10"/>
+      <xs:maxLength value="60"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TPercentual">
+    <xs:restriction base="xs:decimal">
+      <xs:minExclusive value="0"/>
+      <xs:maxInclusive value="100"/>
+      <xs:fractionDigits value="4"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TCodigoOuTexto">
+    <xs:union memberTypes="xs:int TModelo"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="TListaInteiros">
+    <xs:list itemType="xs:int"/>
+  </xs:simpleType>
+
+  <xs:complexType name="TValorComMoeda">
+    <xs:simpleContent>
+      <xs:extension base="TValor">
+        <xs:attribute name="moeda" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:element name="documento">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="chave" type="TChave"/>
+        <xs:element name="modelo" type="TModelo"/>
+        <xs:element name="descricao" type="TDescricao"/>
+        <xs:element name="valor" type="TValor"/>
+        <xs:element name="percentual" type="TPercentual"/>
+        <xs:element name="codigoOuTexto" type="TCodigoOuTexto"/>
+        <xs:element name="listaInteiros" type="TListaInteiros"/>
+        <xs:element name="total" type="TValorComMoeda"/>
+        <xs:element name="emissao" type="xs:date"/>
+        <xs:element name="carimbo" type="xs:dateTime"/>
+        <xs:element name="ativo" type="xs:boolean"/>
+        <xs:element name="quantidade" type="xs:positiveInteger"/>
+        <xs:element name="anexo" type="xs:base64Binary" minOccurs="0"/>
+        <xs:element name="site" type="xs:anyURI" minOccurs="0"/>
+        <xs:element name="observacao" type="xs:string" default="sem observacao" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:ID" use="required"/>
+      <xs:attribute name="versao" type="xs:string" fixed="1.00"/>
+      <xs:attribute name="origem" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Importado por comnamespace.xsd. Repare no elementFormDefault: e diferente
+     do arquivo que o importa, entao os elementos locais deste tipo ficam FORA
+     do namespace mesmo quando usados dentro de um documento cujo schema
+     principal e "qualified". Declarar um xmlns padrao no topo arrastaria estes
+     filhos para dentro do namespace e o documento seria rejeitado. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://exemplo.com.br/importado"
+           elementFormDefault="unqualified">
+
+  <xs:complexType name="TConfirmacao">
+    <xs:sequence>
+      <xs:element name="protocolo" type="xs:string"/>
+      <xs:element name="situacao" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

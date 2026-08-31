@@ -112,6 +112,36 @@ um `include` apontando para arquivo inexistente). Nesses casos o aplicativo
 oferece abrir em **modo tolerante**: a geracao do XML funciona, mas a validacao
 fica indisponivel, porque o validador tambem se recusa a compilar o schema.
 
+## Aparencia
+
+O menu **Opcoes** abre as configuracoes gerais, com um seletor de temas. Sao
+tres familias, cada uma com uma variante clara e uma escura:
+
+| Familia | Variantes |
+| --- | --- |
+| **Forest** | Claro (padrao), Escuro |
+| **Azure** | Claro, Escuro |
+| **Sun Valley** | Claro, Escuro |
+
+A escolha vale na hora e fica gravada em
+`%APPDATA%\ZilsXMLInspector\config.json`. Se o arquivo sumir ou for corrompido,
+o programa abre no tema padrao sem reclamar. Um `config.json` gravado por uma
+versao anterior, que guardava so `claro`/`escuro`/`sistema`, continua valendo.
+
+Os temas sao projetos de terceiros (licenca MIT) incluidos em
+`src/ui/temas_prontos/` -- veja o `CREDITOS.md` de la. Cada um traz suas
+proprias imagens para cada estado de cada controle, e e isso que permite trocar
+a aparencia sem mudar a construcao nem as medidas dos campos. O tema nativo do
+Windows nao serve para isso: nele os controles sao desenhados pelo sistema e
+ignoram qualquer cor.
+
+Cada familia so e carregada quando alguem precisa dela, porque sao dezenas de
+imagens por familia: na abertura entra so a do tema em uso, e as outras quando
+a janela de Opcoes e aberta.
+
+As caixas de dialogo de abrir/salvar arquivo e as mensagens de erro sao as
+nativas do Windows e nao acompanham o tema, porque quem as desenha e o sistema.
+
 ## Linha de comando
 
 Util para automacao e para gerar exemplos em lote:
@@ -153,7 +183,11 @@ src\
   samplevalues.py  valor de exemplo por tipo, respeitando os facets
   regexsample.py   string de exemplo a partir de um xs:pattern
   validator.py     validacao com linha e coluna (libxml2)
+  config.py        preferencias do usuario em JSON (%APPDATA%)
   ui\              janela, arvore, detalhes, opcoes, editor e lista de erros
+    temas.py       catalogo de temas e cores dos widgets classicos
+    settings_dialog.py  janela de configuracoes gerais
+    temas_prontos\ temas ttk de terceiros (MIT) -- veja o CREDITOS.md
 tests\             testes e schemas de exemplo
 ```
 

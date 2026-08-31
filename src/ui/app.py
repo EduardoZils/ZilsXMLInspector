@@ -10,9 +10,11 @@ from tkinter import filedialog, messagebox, ttk
 
 from lxml import etree
 
+import config
 import generator
 import validator
 import xsdmodel
+from ui import settings_dialog, temas
 from ui.details_panel import PainelDetalhes
 from ui.editor_panel import PainelEditor, PainelErros
 from ui.options_panel import PainelOpcoes
@@ -23,11 +25,29 @@ TITULO = "Zils XML Inspector"
 TIPOS_XSD = [("Esquema XML", "*.xsd"), ("Todos os arquivos", "*.*")]
 TIPOS_XML = [("Documento XML", "*.xml"), ("Todos os arquivos", "*.*")]
 
+# Especies de mensagem da barra de status; cada uma tem uma cor por tema.
+ESPECIES_STATUS = ("normal", "erro", "aviso", "ok")
+
+FONTE_MENU = ("Segoe UI", 9)
+
 
 class Aplicativo(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(TITULO)
+
+        # O tema entra antes de qualquer widget existir: assim todo controle ttk
+        # ja nasce pintado e nada chega a ser desenhado com a cor errada.
+        self.preferencias = config.carregar()
+        self.paleta = temas.por_identificador(self.preferencias.get("tema"))
+        temas.aplicar(self, self.paleta)
+        self.configure(background=self.paleta.fundo)
+        self._status_especie = "normal"
+        self._repintura_agendada = False
+        # "all" e a ultima etiqueta de binding, entao isto roda depois do que o
+        # proprio tema faz ao ser ativado.
+        self.bind_all("<<ThemeChanged>>", self._ao_trocar_tema_do_ttk, add="+")
+
         self.minsize(820, 520)
         self._dimensionar()
 
@@ -46,6 +66,9 @@ class Aplicativo(tk.Tk):
         # rodape ficaria sem espaco e os botoes sumiriam da janela.
         self._montar_rodape()
         self._montar_corpo()
+        # Segunda passada, agora nos widgets que o ttk.Style nao alcanca: os
+        # tk.Text, as etiquetas das arvores, os menus e a barra de titulo.
+        self.aplicar_tema()
         self._atualizar_acoes()
         self.status("Abra um arquivo .xsd para comecar.")
 
@@ -70,9 +93,21 @@ class Aplicativo(tk.Tk):
     # ------------------------------------------------------------- montagem
 
     def _montar_menu(self) -> None:
-        barra = tk.Menu(self)
+        """Barra de menus propria, montada com widgets Tk classicos.
 
-        arquivo = tk.Menu(barra, tearoff=False)
+        A barra nativa (a que se obtem com self.config(menu=...)) e desenhada
+        pelo Windows e ignora qualquer cor que o Tk mande: no tema escuro ela
+        ficaria como uma faixa branca entre a barra de titulo e o resto da
+        janela. Menubutton e Button classicos aceitam cor, entao a barra
+        acompanha o tema.
+        """
+        barra = tk.Frame(self)
+        barra.pack(side="top", fill="x")
+        self.barra_menu = barra
+        self._itens_menu = []
+        self._menus = []
+
+        arquivo = self._menu_da_barra("Arquivo")
         arquivo.add_command(label="Abrir XSD...", accelerator="Ctrl+O", command=self.abrir_xsd)
         arquivo.add_command(label="Abrir XML...", command=self.abrir_xml)
         arquivo.add_separator()
@@ -81,23 +116,61 @@ class Aplicativo(tk.Tk):
         )
         arquivo.add_separator()
         arquivo.add_command(label="Sair", command=self.destroy)
-        barra.add_cascade(label="Arquivo", menu=arquivo)
 
-        ferramentas = tk.Menu(barra, tearoff=False)
+        ferramentas = self._menu_da_barra("Ferramentas")
         ferramentas.add_command(label="Gerar XML", accelerator="F5", command=self.gerar)
         ferramentas.add_command(label="Validar XML", accelerator="F8", command=self.validar)
         ferramentas.add_command(label="Formatar (indentar)", command=self.formatar)
-        barra.add_cascade(label="Ferramentas", menu=ferramentas)
 
-        ajuda = tk.Menu(barra, tearoff=False)
+        # Item clicavel, sem submenu: um clique ja abre a janela.
+        self._acao_da_barra("Opcoes", self.abrir_opcoes_gerais)
+
+        ajuda = self._menu_da_barra("Ajuda")
         ajuda.add_command(label="Sobre", command=self.sobre)
-        barra.add_cascade(label="Ajuda", menu=ajuda)
 
-        self.config(menu=barra)
         self.bind("<Control-o>", lambda _e: self.abrir_xsd())
         self.bind("<Control-s>", lambda _e: self.salvar_como())
         self.bind("<F5>", lambda _e: self.gerar())
         self.bind("<F8>", lambda _e: self.validar())
+
+    def _aparencia_de_item(self, rotulo: str) -> dict:
+        return dict(
+            text=rotulo,
+            font=FONTE_MENU,
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            padx=8,
+            pady=3,
+            takefocus=False,
+        )
+
+    def _menu_da_barra(self, rotulo: str) -> tk.Menu:
+        """Cria um item da barra que abre um menu suspenso.
+
+        O menu e criado como filho do proprio Menubutton: o Tk exige essa
+        parentalidade para conseguir posicionar e postar o menu.
+        """
+        item = tk.Menubutton(
+            self.barra_menu, direction="below", **self._aparencia_de_item(rotulo)
+        )
+        menu = tk.Menu(item, tearoff=False)
+        item.configure(menu=menu)
+        item.pack(side="left")
+        self._itens_menu.append(item)
+        self._menus.append(menu)
+        return menu
+
+    def _acao_da_barra(self, rotulo: str, comando) -> None:
+        """Cria um item da barra que executa um comando, sem menu suspenso."""
+        item = tk.Button(
+            self.barra_menu,
+            command=comando,
+            overrelief="flat",
+            **self._aparencia_de_item(rotulo),
+        )
+        item.pack(side="left")
+        self._itens_menu.append(item)
 
     def _montar_barra_superior(self) -> None:
         barra = ttk.Frame(self, padding=(10, 8))
@@ -105,7 +178,7 @@ class Aplicativo(tk.Tk):
         self.botao_abrir = ttk.Button(barra, text="Abrir XSD...", command=self.abrir_xsd)
         self.botao_abrir.pack(side="left")
 
-        self.rotulo_xsd = ttk.Label(barra, text="(nenhum schema carregado)", foreground="#555555")
+        self.rotulo_xsd = ttk.Label(barra, text="(nenhum schema carregado)")
         self.rotulo_xsd.pack(side="left", padx=10)
 
         self.combo_raiz = ttk.Combobox(barra, state="disabled", width=32)
@@ -181,9 +254,107 @@ class Aplicativo(tk.Tk):
 
     # --------------------------------------------------------------- estado
 
-    def status(self, mensagem: str, cor: str = "#333333") -> None:
-        self.rotulo_status.configure(text=mensagem, foreground=cor)
+    def status(self, mensagem: str, especie: str = "normal") -> None:
+        """Escreve na barra de status. A cor sai da paleta, pela *especie*.
+
+        Guardar a especie permite recolorir a mensagem que ja esta na tela
+        quando o usuario troca de tema.
+        """
+        self._status_especie = especie if especie in ESPECIES_STATUS else "normal"
+        self.rotulo_status.configure(text=mensagem, foreground=self._cor_status())
         self.update_idletasks()
+
+    def _cor_status(self) -> str:
+        return getattr(self.paleta, "status_" + self._status_especie)
+
+    # ----------------------------------------------------------------- tema
+
+    def abrir_opcoes_gerais(self) -> None:
+        settings_dialog.abrir(self, self.paleta.identificador, self._trocar_tema)
+
+    def _trocar_tema(self, identificador: str, dialogo=None) -> None:
+        """Aplica e grava na hora: a janela de Opcoes nao tem OK nem Cancelar."""
+        self.aplicar_tema(identificador)
+        if dialogo is not None:
+            dialogo.aplicar_tema(self.paleta)
+        self.preferencias["tema"] = self.paleta.identificador
+        if not config.salvar(self.preferencias):
+            self.status(
+                "Tema aplicado, mas nao foi possivel gravar as preferencias.", "aviso"
+            )
+
+    def aplicar_tema(self, identificador=None) -> None:
+        if identificador is not None:
+            self.paleta = temas.por_identificador(identificador)
+        temas.aplicar(self, self.paleta)
+        self._pintar_classicos()
+        temas.aplicar_barra_titulo(self, self.paleta.escuro)
+
+    def _pintar_classicos(self) -> None:
+        """Aplica a paleta no que o tema ttk nao alcanca.
+
+        Separado de aplicar_tema porque precisa rodar mais de uma vez: veja
+        _ao_trocar_tema_do_ttk.
+        """
+        self.configure(background=self.paleta.fundo)
+        self.rotulo_xsd.configure(foreground=self.paleta.texto_suave)
+        self.rotulo_status.configure(foreground=self._cor_status())
+        temas.recolorir_popdown(self.combo_raiz, self.paleta)
+        self._recolorir_menu()
+        for painel in (
+            self.painel_estrutura,
+            self.painel_opcoes,
+            self.painel_detalhes,
+            self.painel_editor,
+            self.painel_erros,
+        ):
+            painel.aplicar_tema(self.paleta)
+
+    def _ao_trocar_tema_do_ttk(self, _evento=None) -> None:
+        """Repinta os widgets classicos depois que o tema termina de se aplicar.
+
+        Alguns temas prontos (o Sun Valley e um) chamam tk_setPalette ao serem
+        ativados, e isso repinta a forca todo widget Tk classico da janela --
+        inclusive o editor de XML e o painel de detalhes, desfazendo o que a
+        paleta tinha acabado de definir. O tk_setPalette roda no tratamento de
+        <<ThemeChanged>>, que o Tk entrega depois; entao a ultima palavra so e
+        nossa se repintarmos aqui.
+
+        O evento chega uma vez por widget da janela: o agendamento junta todas
+        essas chamadas numa repintura so.
+        """
+        if self._repintura_agendada or not hasattr(self, "painel_editor"):
+            return
+        self._repintura_agendada = True
+        self.after_idle(self._repintura_pendente)
+
+    def _repintura_pendente(self) -> None:
+        self._repintura_agendada = False
+        try:
+            self._pintar_classicos()
+        except tk.TclError:
+            pass  # a janela pode ter sido fechada nesse meio tempo
+
+    def _recolorir_menu(self) -> None:
+        """Pinta a barra de menus, seus itens e os menus que descem deles."""
+        p = self.paleta
+        self.barra_menu.configure(background=p.fundo_menu)
+        for item in self._itens_menu:
+            item.configure(
+                background=p.fundo_menu,
+                foreground=p.texto,
+                activebackground=p.fundo_menu_ativo,
+                activeforeground=p.texto,
+            )
+        for menu in self._menus:
+            menu.configure(
+                background=p.fundo_menu,
+                foreground=p.texto,
+                activebackground=p.selecao_fundo,
+                activeforeground=p.selecao_texto,
+                disabledforeground=p.texto_desabilitado,
+                borderwidth=1,
+            )
 
     def _atualizar_acoes(self) -> None:
         tem_schema = self.schema is not None
@@ -234,7 +405,7 @@ class Aplicativo(tk.Tk):
             return
 
         erro, detalhe = resultado
-        self.status("Falhou: %s" % erro, "#b00020")
+        self.status("Falhou: %s" % erro, "erro")
         # Quem sabe tratar a falha tem a chance de propor uma alternativa antes
         # de o usuario ver um dialogo de erro.
         if ao_falhar is not None and ao_falhar(erro):
@@ -305,13 +476,13 @@ class Aplicativo(tk.Tk):
         if not raizes:
             self.status(
                 "O schema nao declara elementos globais, entao nao ha raiz para gerar.",
-                "#b00020",
+                "erro",
             )
         elif tolerante:
             self.status(
                 "Schema carregado em modo tolerante: %d raiz(es). A validacao esta "
                 "indisponivel para este arquivo." % len(raizes),
-                "#a06000",
+                "aviso",
             )
         else:
             self.status(
@@ -407,7 +578,7 @@ class Aplicativo(tk.Tk):
             recado = "  |  " + "; ".join(avisos) if avisos else ""
             self.status(
                 "%s: validacao indisponivel em modo tolerante.%s" % (prefixo, recado),
-                "#a06000",
+                "aviso",
             )
             return
         texto = self.painel_editor.obter_texto()
@@ -418,7 +589,7 @@ class Aplicativo(tk.Tk):
         try:
             erros = validator.validar_texto(self.caminho_xsd, texto)
         except validator.ErroDeSchema as erro:
-            self.status("Nao foi possivel compilar o XSD: %s" % erro, "#b00020")
+            self.status("Nao foi possivel compilar o XSD: %s" % erro, "erro")
             messagebox.showerror(TITULO, "Nao foi possivel compilar o XSD.",
                                  detail=str(erro), parent=self)
             return
@@ -432,10 +603,10 @@ class Aplicativo(tk.Tk):
             self.status(
                 "%s invalido: %d erro(s) - veja a aba Validacao.%s"
                 % (prefixo, len(erros), sufixo),
-                "#b00020",
+                "erro",
             )
         else:
-            self.status("%s valido contra o schema.%s" % (prefixo, sufixo), "#1a7f37")
+            self.status("%s valido contra o schema.%s" % (prefixo, sufixo), "ok")
 
     def _ir_para_erro(self, erro) -> None:
         self.abas_direita.select(0)
@@ -449,7 +620,7 @@ class Aplicativo(tk.Tk):
             analisador = etree.XMLParser(remove_blank_text=True)
             arvore = etree.fromstring(texto.encode("utf-8"), analisador)
         except etree.XMLSyntaxError as erro:
-            self.status("XML mal formado: %s" % erro.msg, "#b00020")
+            self.status("XML mal formado: %s" % erro.msg, "erro")
             return
         self.painel_editor.definir_texto(generator.serializar(arvore))
         self.status("XML reindentado.")
@@ -480,7 +651,7 @@ class Aplicativo(tk.Tk):
             messagebox.showerror(TITULO, str(erro), parent=self)
             return
         self.caminho_xml = caminho
-        self.status("Salvo em %s" % caminho, "#1a7f37")
+        self.status("Salvo em %s" % caminho, "ok")
 
     def sobre(self) -> None:
         messagebox.showinfo(

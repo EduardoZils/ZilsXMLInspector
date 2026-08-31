@@ -5,6 +5,8 @@ import re
 import tkinter as tk
 from tkinter import ttk
 
+from ui import temas
+
 FONTE = ("Consolas", 10)
 
 # Acima disso o realce colorido custa mais do que ajuda.
@@ -20,13 +22,15 @@ _REGRAS = re.compile(
     re.DOTALL,
 )
 
-CORES = {
-    "comentario": {"foreground": "#7a7a7a"},
-    "pi": {"foreground": "#7a7a7a"},
-    "tag": {"foreground": "#0b5394"},
-    "fecha": {"foreground": "#0b5394"},
-    "atributo": {"foreground": "#7f0055"},
-    "valor": {"foreground": "#067d17"},
+# Etiqueta de realce -> token da paleta. As chaves tem de continuar iguais aos
+# nomes dos grupos de _REGRAS: e por elas que realcar() casa o que o regex achou.
+TAGS = {
+    "comentario": "sintaxe_comentario",
+    "pi": "sintaxe_comentario",
+    "tag": "sintaxe_tag",
+    "fecha": "sintaxe_tag",
+    "atributo": "sintaxe_atributo",
+    "valor": "sintaxe_valor",
 }
 
 
@@ -46,11 +50,25 @@ class PainelEditor(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-        for nome, opcoes in CORES.items():
-            self.texto.tag_configure(nome, **opcoes)
-        self.texto.tag_configure("linha_erro", background="#ffe0e0")
+        self.aplicar_tema(temas.padrao())
 
     # ------------------------------------------------------------------ API
+
+    def aplicar_tema(self, paleta) -> None:
+        self.texto.configure(
+            background=paleta.fundo_campo,
+            foreground=paleta.texto,
+            insertbackground=paleta.cursor,
+            selectbackground=paleta.selecao_fundo,
+            selectforeground=paleta.selecao_texto,
+            # Sem isto a selecao some quando o foco vai para a arvore.
+            inactiveselectbackground=paleta.selecao_fundo,
+            # O anel de foco que o Tk desenha em volta do Text fica gritante no escuro.
+            highlightthickness=0,
+        )
+        for nome, token in TAGS.items():
+            self.texto.tag_configure(nome, foreground=getattr(paleta, token))
+        self.texto.tag_configure("linha_erro", background=paleta.linha_erro_fundo)
 
     def definir_texto(self, conteudo: str) -> None:
         self.texto.delete("1.0", "end")
@@ -79,7 +97,7 @@ class PainelEditor(ttk.Frame):
 
     def realcar(self) -> None:
         conteudo = self.obter_texto()
-        for nome in CORES:
+        for nome in TAGS:
             self.texto.tag_remove(nome, "1.0", "end")
         if len(conteudo) > LIMITE_REALCE:
             return
@@ -101,7 +119,7 @@ class PainelEditor(ttk.Frame):
 
         for ocorrencia in _REGRAS.finditer(conteudo):
             nome = ocorrencia.lastgroup
-            if nome in CORES:
+            if nome in TAGS:
                 self.texto.tag_add(
                     nome, posicao(ocorrencia.start()), posicao(ocorrencia.end())
                 )
@@ -132,6 +150,12 @@ class PainelErros(ttk.Frame):
         self.lista.bind("<Double-1>", self._clique)
         self.lista.bind("<Return>", self._clique)
         self._erros: list = []
+
+    def aplicar_tema(self, paleta) -> None:
+        """Nada a fazer: a Treeview e inteiramente pintada pelo ttk.Style.
+
+        O metodo existe para o painel entrar na mesma cadeia dos outros.
+        """
 
     def mostrar(self, erros: list) -> None:
         self._erros = list(erros)

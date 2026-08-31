@@ -10,15 +10,17 @@ import tkinter as tk
 from tkinter import ttk
 
 import xsdmodel
+from ui import temas
 
 FONTE = ("Segoe UI", 9)
 FONTE_MONO = ("Consolas", 9)
 
-CORES_ESPECIE = {
-    "elemento": "#0b5394",
-    "atributo": "#7f0055",
-    "grupo": "#0b5394",
-    "any": "#a06000",
+# Especie do no -> token da paleta que da a cor do titulo.
+TOKENS_ESPECIE = {
+    "elemento": "especie_elemento",
+    "atributo": "especie_atributo",
+    "grupo": "especie_grupo",
+    "any": "especie_any",
 }
 
 
@@ -34,7 +36,6 @@ class PainelDetalhes(ttk.LabelFrame):
             padx=6,
             pady=4,
             relief="flat",
-            background="#fbfbfb",
             cursor="arrow",
             # Parada de tabulacao no lugar de espacos: a fonte e proporcional e
             # o alinhamento por espacos nao fecharia.
@@ -47,21 +48,43 @@ class PainelDetalhes(ttk.LabelFrame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
+        # Aqui so o que nao depende de tema; a cor vem toda de aplicar_tema.
         self.texto.tag_configure("titulo", font=("Segoe UI", 11, "bold"))
-        self.texto.tag_configure("especie", font=("Segoe UI", 9), foreground="#777777")
+        self.texto.tag_configure("especie", font=("Segoe UI", 9))
         self.texto.tag_configure("secao", font=("Segoe UI", 9, "bold"), spacing1=8)
-        self.texto.tag_configure("rotulo", foreground="#555555")
         self.texto.tag_configure("valor", font=FONTE_MONO)
-        self.texto.tag_configure("doc", foreground="#333333", spacing3=2)
-        self.texto.tag_configure("codigo", font=FONTE_MONO, foreground="#0b5394")
-        self.texto.tag_configure("vazio", foreground="#999999")
-        for especie, cor in CORES_ESPECIE.items():
-            self.texto.tag_configure("titulo_" + especie, font=("Segoe UI", 11, "bold"),
-                                     foreground=cor)
+        self.texto.tag_configure("doc", spacing3=2)
+        self.texto.tag_configure("codigo", font=FONTE_MONO)
+        for especie in TOKENS_ESPECIE:
+            self.texto.tag_configure("titulo_" + especie, font=("Segoe UI", 11, "bold"))
 
+        self.aplicar_tema(temas.padrao())
         self.limpar()
 
     # ------------------------------------------------------------------ API
+
+    def aplicar_tema(self, paleta) -> None:
+        self.texto.configure(
+            background=paleta.fundo_alternativo,
+            # O widget vive em state="disabled" (e so leitura). O Text, ao
+            # contrario do Entry, nao tem disabledforeground: desabilitado ele
+            # continua desenhando com o foreground normal.
+            foreground=paleta.texto,
+            insertbackground=paleta.cursor,
+            selectbackground=paleta.selecao_fundo,
+            selectforeground=paleta.selecao_texto,
+            inactiveselectbackground=paleta.selecao_fundo,
+            highlightthickness=0,
+        )
+        self.texto.tag_configure("titulo", foreground=paleta.texto)
+        self.texto.tag_configure("especie", foreground=paleta.detalhe_especie)
+        self.texto.tag_configure("secao", foreground=paleta.texto)
+        self.texto.tag_configure("rotulo", foreground=paleta.texto_suave)
+        self.texto.tag_configure("doc", foreground=paleta.detalhe_doc)
+        self.texto.tag_configure("codigo", foreground=paleta.especie_elemento)
+        self.texto.tag_configure("vazio", foreground=paleta.texto_apagado)
+        for especie, token in TOKENS_ESPECIE.items():
+            self.texto.tag_configure("titulo_" + especie, foreground=getattr(paleta, token))
 
     def limpar(self) -> None:
         self._escrever(
@@ -79,7 +102,7 @@ class PainelDetalhes(ttk.LabelFrame):
 
     def _montar(self, detalhe):
         yield (detalhe.titulo, "titulo_" + detalhe.especie
-               if detalhe.especie in CORES_ESPECIE else "titulo")
+               if detalhe.especie in TOKENS_ESPECIE else "titulo")
         yield ("   " + detalhe.especie + "\n", "especie")
 
         for rotulo, valor in detalhe.cabecalho:

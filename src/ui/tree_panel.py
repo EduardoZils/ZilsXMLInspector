@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 
 import xsdmodel
+from ui import temas
 
 MARCADOR = "__preencher__"
 
@@ -43,16 +44,21 @@ class PainelEstrutura(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-        self.arvore.tag_configure("atributo", foreground="#7f0055")
-        self.arvore.tag_configure("grupo", foreground="#0b5394")
-        self.arvore.tag_configure("any", foreground="#a06000")
         self.arvore.tag_configure("raiz", font=("Segoe UI", 9, "bold"))
 
         self.arvore.bind("<<TreeviewOpen>>", self._ao_abrir)
         self.arvore.bind("<<TreeviewSelect>>", self._ao_selecionar)
         self.arvore.bind("<Double-1>", self._ao_duplo_clique)
 
+        self.aplicar_tema(temas.padrao())
+
     # ------------------------------------------------------------------ API
+
+    def aplicar_tema(self, paleta) -> None:
+        """Fundo e selecao vem do ttk.Style; aqui so as cores por especie."""
+        self.arvore.tag_configure("atributo", foreground=paleta.especie_atributo)
+        self.arvore.tag_configure("grupo", foreground=paleta.especie_grupo)
+        self.arvore.tag_configure("any", foreground=paleta.especie_any)
 
     def carregar(self, schema) -> None:
         self.limpar()

@@ -213,3 +213,113 @@ def test_janela_abre_maximizada(app):
         pytest.skip("estado zoomed e especifico do Windows")
     app.maximizar()
     assert app.state() in ("zoomed", "withdrawn")
+
+
+# ------------------------------------------------------------------- tema
+
+
+def test_menu_tem_opcoes_antes_de_ajuda(app):
+    rotulos = [item.cget("text") for item in app._itens_menu]
+    assert rotulos == ["Arquivo", "Ferramentas", "Opcoes", "Ajuda"]
+
+
+def test_troca_de_tema_nao_levanta(app):
+    """Trocar de tema mexe no ttk inteiro; nao pode sobrar residuo."""
+    from ui import temas
+
+    try:
+        for tema in temas.TEMAS + temas.TEMAS[:1]:
+            app.aplicar_tema(tema.identificador)
+            app.update()
+    finally:
+        app.aplicar_tema(temas.TEMA_PADRAO)
+
+
+def test_tema_pinta_os_widgets_classicos(app):
+    """Os tk.Text nao sao alcancados pelo tema ttk; quem os pinta e a paleta."""
+    from ui import temas
+
+    escuro = temas.por_identificador("forest-dark")
+    claro = temas.por_identificador("forest-light")
+    try:
+        app.aplicar_tema(escuro.identificador)
+        assert app.painel_editor.texto.cget("background") == escuro.fundo_campo
+        assert app.painel_detalhes.texto.cget("background") == escuro.fundo_alternativo
+        assert app.painel_editor.texto.tag_cget("tag", "foreground") == escuro.sintaxe_tag
+
+        app.aplicar_tema(claro.identificador)
+        assert app.painel_editor.texto.cget("background") == claro.fundo_campo
+        assert app.painel_editor.texto.tag_cget("tag", "foreground") == claro.sintaxe_tag
+    finally:
+        app.aplicar_tema(temas.TEMA_PADRAO)
+
+
+def test_status_ja_escrito_acompanha_a_troca_de_tema(app):
+    """A mensagem na tela tem de mudar de cor sem ser reescrita."""
+    from ui import temas
+
+    try:
+        app.status("deu ruim", "erro")
+        assert str(app.rotulo_status.cget("foreground")) == temas.REALCES_CLAROS.status_erro
+        app.aplicar_tema("forest-dark")
+        assert str(app.rotulo_status.cget("foreground")) == temas.REALCES_ESCUROS.status_erro
+    finally:
+        app.aplicar_tema(temas.TEMA_PADRAO)
+
+
+def test_status_com_especie_desconhecida_cai_no_normal(app):
+    from ui import temas
+
+    app.status("qualquer coisa", "inventada")
+    assert str(app.rotulo_status.cget("foreground")) == temas.REALCES_CLAROS.status_normal
+
+
+def test_dialogo_aplica_e_grava_na_hora(app):
+    """A janela nao tem OK: escolher o radio ja aplica e persiste."""
+    import config
+    from ui import temas
+    from ui.settings_dialog import JanelaOpcoesGerais
+
+    # Instanciada direto: abrir() chamaria wait_window e travaria a suite, que
+    # nunca entra no mainloop.
+    dialogo = JanelaOpcoesGerais(app, app.paleta.identificador, app._trocar_tema)
+    try:
+        for escolhido in ("sun-valley-dark", "azure-light"):
+            dialogo.tema.set(escolhido)
+            dialogo._escolher()
+            assert app.paleta.identificador == escolhido
+            assert config.carregar()["tema"] == escolhido
+    finally:
+        dialogo.grab_release()
+        dialogo.destroy()
+        app.aplicar_tema(temas.TEMA_PADRAO)
+        config.salvar({"tema": temas.TEMA_PADRAO})
+
+
+def test_dialogo_lista_todos_os_temas_do_catalogo(app):
+    from ui import temas
+    from ui.settings_dialog import JanelaOpcoesGerais
+
+    dialogo = JanelaOpcoesGerais(app, app.paleta.identificador, app._trocar_tema)
+    try:
+        valores = {
+            f.cget("value")
+            for f in dialogo.grupo.winfo_children()
+            if f.winfo_class() == "TRadiobutton"
+        }
+        assert valores == {t.identificador for t in temas.TEMAS}
+    finally:
+        dialogo.grab_release()
+        dialogo.destroy()
+
+
+def test_preferencia_invalida_nao_derruba_a_abertura(app):
+    """O construtor le o config; um valor invalido cai no tema padrao."""
+    import config
+    from ui import temas
+
+    config.salvar({"tema": "invalido"})
+    assert temas.por_identificador(config.carregar()["tema"]).identificador == (
+        temas.TEMA_PADRAO
+    )
+    config.salvar({"tema": temas.TEMA_PADRAO})

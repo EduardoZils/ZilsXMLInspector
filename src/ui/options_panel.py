@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 
 import generator
+from ui import temas
 
 
 class PainelOpcoes(ttk.Frame):
@@ -83,20 +84,25 @@ class PainelOpcoes(ttk.Frame):
         )
 
         linha += 1
-        ttk.Label(
+        self.rotulo_dica = ttk.Label(
             self,
             wraplength=320,
-            foreground="#555555",
             text=(
                 "O XML minimo traz so o que o schema exige. O esqueleto completo "
                 "inclui todos os elementos e atributos opcionais, servindo como "
                 "referencia da estrutura."
             ),
-        ).grid(row=linha, column=0, sticky="w", pady=(10, 0))
+        )
+        self.rotulo_dica.grid(row=linha, column=0, sticky="w", pady=(10, 0))
 
         self.columnconfigure(0, weight=1)
+        self.aplicar_tema(temas.padrao())
 
     # ------------------------------------------------------------------ API
+
+    def aplicar_tema(self, paleta) -> None:
+        """Todo o resto do painel e ttk puro e segue o ttk.Style."""
+        self.rotulo_dica.configure(foreground=paleta.texto_suave)
 
     def opcoes(self) -> generator.OpcoesGeracao:
         return generator.OpcoesGeracao(
